@@ -6,31 +6,41 @@ import datetime
 import json
 import bs4
 import re
-import pymongo
-import pymongo.errors
 import logging
 import threading
 import sys
+import mysql.connector
 
 TIME_FORMAT = "%Y-%m-%d"
 ID_EXTRACTOR = re.compile(r"http://[\w]*.qq.com/a/([\d]*)/([\d]*).htm")
-MONGODB_HOST = "localhost"
-MONGODB_PORT = int(sys.argv[1])
+MYSQL_HOST = "localhost"
+MYSQL_PORT = int(sys.argv[1])
 
 LOG = None
 
 CATEGORY_INFO = [
-    ("news",    "news",    ["newsgn", "newssh"], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("army",    "news",    ["milite"],           "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("gnews",   "news",    ["newsgj"],           "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("sports",  "sports",  [],                   "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("ent",     "ent",     [],                   "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("finance", "finance", [],                   "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("tech",    "tech",    [],                   "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("games",   "games",   [],                   "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("auto",    "auto",    [],                   "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("edu",     "edu",     [],                   "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("house",   "house",   [],                   "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("news", "news", ["newsgn", "newssh"],
+     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("army", "news", ["milite"],
+     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("gnews", "news", ["newsgj"],
+     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("sports", "sports", [],
+     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("ent", "ent", [],
+     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("finance", "finance", [],
+     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("tech", "tech", [],
+     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("games", "games", [],
+     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("auto", "auto", [],
+     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("edu", "edu", [],
+     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("house", "house", [],
+     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
 ]
 
 
@@ -49,9 +59,8 @@ def get_article_content(url):
         return None, None
 
 
-def get_page(cat_info, session, date, page_num, articles_col):
-
-    rand_num = random.randrange(0, 10**16 - 1)
+def get_page(cat_info, session, date, page_num, db_conn):
+    rand_num = random.randrange(0, 10 ** 16 - 1)
     u = cat_info["url_template"] % {
         "category": cat_info["root_cat"],
         "rand_num": rand_num,
@@ -75,29 +84,36 @@ def get_page(cat_info, session, date, page_num, articles_col):
 
             article = {}
             try:
-                article["category"]     = cat_info["name"]
+                article["category"] = cat_info["name"]
                 article["sub_category"] = c.find("span", "t-tit").string.strip("[]")
-                article["date"]         = c.find("span", "t-time").string
-                article["title"]        = c.find("a", ).string
-                article["href"]         = c.find("a", )["href"]
-                article["summary"]      = list(c.find("dd", ).stripped_strings)[0]
-                article["id"]           = cat_info["name"] + "-" + "-".join(ID_EXTRACTOR.match(article["href"]).groups())
+                article["date"] = str(c.find("span", "t-time").string)
+                article["title"] = str(c.find("a", ).string)
+                article["href"] = c.find("a", )["href"]
+                article["summary"] = list(c.find("dd", ).stripped_strings)[0]
+                article["id"] = cat_info["name"] + "-" + "-".join(ID_EXTRACTOR.match(article["href"]).groups())
                 article["content"], article["source"] = get_article_content(article["href"])
                 if article["content"]:
                     # articles.append(article)
                     article_num += 1
                     try:
-                        articles_col.insert(article)
-                    except pymongo.errors.DuplicateKeyError:
+                        cursor = db_conn.cursor()
+                        cursor.execute(
+                            """INSERT INTO tencent_articles.articles VALUES"""
+                            """(%(id)s, %(category)s, %(sub_category)s, %(date)s, %(href)s, %(title)s, %(summary)s, %(content)s)""",
+                            article
+                        )
+                        db_conn.commit()
+                        cursor.close()
+
                         continue
-            except pymongo.errors.ConnectionFailure as e:
-                LOG.critical("Connection failed, %s" % e)
+                    except Exception as e:
+                        LOG.critical("Connection failed, %s" % e)
 
             except Exception as e:
                 if article:
                     LOG.error("Failed in handling reason:%s, html:%s" % (e, article))
                 else:
-                    LOG.error("Failed in handling reason:%s" % (e, ))
+                    LOG.error("Failed in handling reason:%s" % (e,))
 
         LOG.info("Get %d articles in page %d, on %s" % (article_num, page_num, date))
         return page_count, article_num
@@ -108,10 +124,13 @@ def get_page(cat_info, session, date, page_num, articles_col):
 
 
 def worker(cat_index):
-
-    db = pymongo.MongoClient(MONGODB_HOST, MONGODB_PORT).tencent_articles
-    articles_col = db.articles
-    record_col = db.record
+    db_connection = mysql.connector.Connect(
+        user="root",
+        password="root",
+        host=MYSQL_HOST,
+        port=MYSQL_PORT,
+        database="tencent_articles"
+    )
 
     cat_info = {
         "name": CATEGORY_INFO[cat_index][0],
@@ -129,7 +148,6 @@ def worker(cat_index):
     })
 
     day = datetime.datetime(year=2016, month=11, day=18)
-    record_col.find({"category": cat_info["name"]})
 
     cat_info["num"] = 0
 
@@ -140,13 +158,21 @@ def worker(cat_index):
 
         # skip this day
         try:
-            doc = record_col.find_one({"id": record_id})
-            if doc:
+            cursor = db_connection.cursor()
+            cursor.execute(
+                "SELECT COUNT(*) FROM tencent_articles.record WHERE id=%(id)s",
+                {
+                    "id": record_id
+                }
+            )
+            result = cursor.fetchone()[0]
+            cursor.close()
+
+            if result > 0:
                 LOG.info("Skip day %s" % day.strftime(TIME_FORMAT))
                 day -= datetime.timedelta(days=1)
                 cat_info["num"] += int(doc["num"])
                 continue
-
             article_num = 0
 
             page_count, tmp_article_num = get_page(
@@ -154,7 +180,7 @@ def worker(cat_index):
                 session,
                 day.strftime(TIME_FORMAT),
                 1,
-                articles_col
+                db_connection
             )
             article_num += tmp_article_num
 
@@ -164,15 +190,19 @@ def worker(cat_index):
                     session,
                     day.strftime(TIME_FORMAT),
                     2 + i,
-                    articles_col
+                    db_connection
                 )
                 article_num += tmp_article_num
-
-            record_col.insert({
-                "id": record_id,
-                "category": cat_info["name"],
-                "num": article_num
-            })
+            cursor = db_connection.cursor()
+            cursor.execute(
+                "INSERT INTO tencent_articles.record VALUES(%(id)s, %(category)s, %(num)s)",
+                {
+                    "id": record_id,
+                    "category": cat_info["name"],
+                    "num": article_num
+                }
+            )
+            cursor.close()
             cat_info["num"] += article_num
 
             LOG.info("Get %d articles on %s, total %d" % (article_num, day.strftime(TIME_FORMAT), cat_info["num"]))
@@ -199,18 +229,27 @@ if __name__ == "__main__":
     LOG.addHandler(stream_handler)
 
     threads = []
-    for idx in range(len(CATEGORY_INFO)):
-        threads.append(
-            threading.Thread(
-                target=worker,
-                args=(idx, ),
-                name=CATEGORY_INFO[idx][0]
-            )
+
+    idx = 0
+    threads.append(
+        threading.Thread(
+            target=worker,
+            args=(idx,),
+            name=CATEGORY_INFO[idx][0]
         )
+    )
+
+    # for idx in range(len(CATEGORY_INFO)):
+    #     threads.append(
+    #         threading.Thread(
+    #             target=worker,
+    #             args=(idx, ),
+    #             name=CATEGORY_INFO[idx][0]
+    #         )
+    #     )
 
     for t in threads:
         t.start()
 
     for t in threads:
         t.join()
-
