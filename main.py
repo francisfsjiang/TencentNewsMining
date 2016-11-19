@@ -178,7 +178,7 @@ if __name__ == "__main__":
 
     ch = logging.FileHandler(filename="log.log")
     ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(processName)-7s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(threadName)-7s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
     LOG.addHandler(ch)
 
