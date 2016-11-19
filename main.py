@@ -7,7 +7,7 @@ import re
 import pymongo
 import pymongo.errors
 import logging
-import multiprocessing
+import threading
 
 TIME_FORMAT = "%Y-%m-%d"
 ID_EXTRACTOR = re.compile(r"http://[\w]*.qq.com/a/([\d]*)/([\d]*).htm")
@@ -173,7 +173,7 @@ def worker(cat_index):
 
 if __name__ == "__main__":
 
-    LOG = logging.getLogger('simple_example')
+    LOG = logging.getLogger('ta')
     LOG.setLevel(logging.DEBUG)
 
     ch = logging.FileHandler(filename="log.log")
@@ -185,7 +185,7 @@ if __name__ == "__main__":
     process = []
     for idx in range(len(CATEGORY_INFO)):
         process.append(
-            multiprocessing.Process(
+            threading.Thread(
                 target=worker,
                 args=(idx, ),
                 name=CATEGORY_INFO[idx][0]
