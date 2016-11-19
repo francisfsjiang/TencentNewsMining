@@ -1,5 +1,3 @@
-# coding: utf-8
-
 import requests
 import random
 import datetime
@@ -9,12 +7,14 @@ import re
 import logging
 import threading
 import sys
-import mysql.connector
+
+import sqlalchemy
+import sqlalchemy.orm
+
+from model import Article, Record
 
 TIME_FORMAT = "%Y-%m-%d"
 ID_EXTRACTOR = re.compile(r"http://[\w]*.qq.com/a/([\d]*)/([\d]*).htm")
-MYSQL_HOST = "localhost"
-MYSQL_PORT = int(sys.argv[1])
 
 LOG = None
 
@@ -59,7 +59,7 @@ def get_article_content(url):
         return None, None
 
 
-def get_page(cat_info, session, date, page_num, db_conn):
+def get_page(cat_info, session, date, page_num, db_session):
     rand_num = random.randrange(0, 10 ** 16 - 1)
     u = cat_info["url_template"] % {
         "category": cat_info["root_cat"],
@@ -96,25 +96,20 @@ def get_page(cat_info, session, date, page_num, db_conn):
                     # articles.append(article)
                     article_num += 1
                     try:
-                        cursor = db_conn.cursor()
-                        cursor.execute(
-                            """INSERT INTO tencent_articles.articles VALUES"""
-                            """(%(id)s, %(category)s, %(sub_category)s, %(date)s, %(href)s, %(title)s, %(summary)s, %(content)s)""",
-                            article
+                        article = Article(
+                            **article
                         )
-                        db_conn.commit()
-                        cursor.close()
+                        db_session.add(article)
 
                         continue
                     except Exception as e:
-                        LOG.critical("Connection failed, %s" % e)
-
+                        LOG.error("Insert failed, %s" % e)
             except Exception as e:
                 if article:
                     LOG.error("Failed in handling reason:%s, html:%s" % (e, article))
                 else:
                     LOG.error("Failed in handling reason:%s" % (e,))
-
+        db_session.commit()
         LOG.info("Get %d articles in page %d, on %s" % (article_num, page_num, date))
         return page_count, article_num
 
@@ -124,13 +119,8 @@ def get_page(cat_info, session, date, page_num, db_conn):
 
 
 def worker(cat_index):
-    db_connection = mysql.connector.Connect(
-        user="root",
-        password="root",
-        host=MYSQL_HOST,
-        port=MYSQL_PORT,
-        database="tencent_articles"
-    )
+    engine = sqlalchemy.create_engine(sys.argv[1])
+    db_session = sqlalchemy.orm.sessionmaker(bind=engine)()
 
     cat_info = {
         "name": CATEGORY_INFO[cat_index][0],
@@ -158,15 +148,7 @@ def worker(cat_index):
 
         # skip this day
         try:
-            cursor = db_connection.cursor()
-            cursor.execute(
-                "SELECT COUNT(*) FROM tencent_articles.record WHERE id=%(id)s",
-                {
-                    "id": record_id
-                }
-            )
-            result = cursor.fetchone()[0]
-            cursor.close()
+            result = db_session.query(Record).filter(Record.id == record_id).count()
 
             if result > 0:
                 LOG.info("Skip day %s" % day.strftime(TIME_FORMAT))
@@ -180,7 +162,7 @@ def worker(cat_index):
                 session,
                 day.strftime(TIME_FORMAT),
                 1,
-                db_connection
+                db_session
             )
             article_num += tmp_article_num
 
@@ -190,20 +172,17 @@ def worker(cat_index):
                     session,
                     day.strftime(TIME_FORMAT),
                     2 + i,
-                    db_connection
+                    db_session
                 )
                 article_num += tmp_article_num
-            cursor = db_connection.cursor()
-            cursor.execute(
-                "INSERT INTO tencent_articles.record VALUES(%(id)s, %(category)s, %(num)s)",
-                {
-                    "id": record_id,
-                    "category": cat_info["name"],
-                    "num": article_num
-                }
+
+            new_record = Record(
+                id=record_id,
+                category=cat_info["name"],
+                num=article_num
             )
-            db_connection.commit()
-            cursor.close()
+            db_session.add(new_record)
+            db_session.commit()
 
             cat_info["num"] += article_num
 
