@@ -90,10 +90,15 @@ def get_page(cat_info, session, date, page_num, articles_col):
                         articles_col.insert(article)
                     except pymongo.errors.DuplicateKeyError:
                         continue
+            except pymongo.errors.ConnectionFailure as e:
+                LOG.critical("Connection failed, %s" % e)
+
             except Exception as e:
                 if article:
                     LOG.error("Failed in handling reason:%s, html:%s" % (e, article))
-                continue
+                else:
+                    LOG.error("Failed in handling reason:%s" % (e, ))
+
         LOG.info("Get %d articles in page %d, on %s" % (article_num, page_num, date))
         return page_count, article_num
 
