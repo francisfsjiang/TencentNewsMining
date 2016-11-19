@@ -8,6 +8,7 @@ import pymongo
 import pymongo.errors
 import logging
 import threading
+import sys
 
 TIME_FORMAT = "%Y-%m-%d"
 ID_EXTRACTOR = re.compile(r"http://[\w]*.qq.com/a/([\d]*)/([\d]*).htm")
@@ -123,7 +124,7 @@ def worker(cat_index):
     cat_info["num"] = 0
 
     while cat_info["num"] < 30000:
-        logging.info(day.strftime(TIME_FORMAT))
+        LOG.info(day.strftime(TIME_FORMAT))
 
         record_id = cat_info["name"] + "-" + day.strftime(TIME_FORMAT)
 
@@ -176,15 +177,20 @@ if __name__ == "__main__":
     LOG = logging.getLogger('ta')
     LOG.setLevel(logging.DEBUG)
 
-    ch = logging.FileHandler(filename="log.log")
-    ch.setLevel(logging.DEBUG)
+    file_handler = logging.FileHandler(filename="log.log")
+    file_handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(threadName)-7s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    LOG.addHandler(ch)
+    file_handler.setFormatter(formatter)
+    LOG.addHandler(file_handler)
 
-    process = []
+    stream_handler = logging.StreamHandler(sys.stderr)
+    stream_handler.setLevel(logging.ERROR)
+    stream_handler.setFormatter(formatter)
+    LOG.addHandler(stream_handler)
+
+    threads = []
     for idx in range(len(CATEGORY_INFO)):
-        process.append(
+        threads.append(
             threading.Thread(
                 target=worker,
                 args=(idx, ),
@@ -192,9 +198,9 @@ if __name__ == "__main__":
             )
         )
 
-    for p in process:
-        p.start()
+    for t in threads:
+        t.start()
 
-    for p in process:
-        p.join()
+    for t in threads:
+        t.join()
 
