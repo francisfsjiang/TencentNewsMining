@@ -202,7 +202,9 @@ def worker(cat_index):
                     "num": article_num
                 }
             )
+            db_connection.commit()
             cursor.close()
+
             cat_info["num"] += article_num
 
             LOG.info("Get %d articles on %s, total %d" % (article_num, day.strftime(TIME_FORMAT), cat_info["num"]))
@@ -230,23 +232,23 @@ if __name__ == "__main__":
 
     threads = []
 
-    idx = 0
-    threads.append(
-        threading.Thread(
-            target=worker,
-            args=(idx,),
-            name=CATEGORY_INFO[idx][0]
-        )
-    )
-
-    # for idx in range(len(CATEGORY_INFO)):
-    #     threads.append(
-    #         threading.Thread(
-    #             target=worker,
-    #             args=(idx, ),
-    #             name=CATEGORY_INFO[idx][0]
-    #         )
+    # idx = 0
+    # threads.append(
+    #     threading.Thread(
+    #         target=worker,
+    #         args=(idx,),
+    #         name=CATEGORY_INFO[idx][0]
     #     )
+    # )
+
+    for idx in range(len(CATEGORY_INFO)):
+        threads.append(
+            threading.Thread(
+                target=worker,
+                args=(idx, ),
+                name=CATEGORY_INFO[idx][0]
+            )
+        )
 
     for t in threads:
         t.start()
