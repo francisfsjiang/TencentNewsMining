@@ -123,7 +123,7 @@ def worker(cat_index):
         "Referer": "http://roll.%s.qq.com/index.htm" % cat_info["root_cat"]
     })
 
-    day = datetime.datetime(year=2016, month=11, day=8)
+    day = datetime.datetime(year=2016, month=11, day=18)
     record_col.find({"category": cat_info["name"]})
 
     cat_info["num"] = 0
