@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import requests
 import random
 import datetime
@@ -13,7 +15,7 @@ import sys
 TIME_FORMAT = "%Y-%m-%d"
 ID_EXTRACTOR = re.compile(r"http://[\w]*.qq.com/a/([\d]*)/([\d]*).htm")
 MONGODB_HOST = "localhost"
-MONGODB_PORT = 27017
+MONGODB_PORT = int(sys.argv[1])
 
 LOG = None
 
@@ -71,24 +73,27 @@ def get_page(cat_info, session, date, page_num, articles_col):
 
         for c in soup.find(name="body").children:
 
-            article = {
-                "category": cat_info["name"],
-                "sub_category": c.find("span", "t-tit").string.strip("[]"),
-                "date": c.find("span", "t-time").string,
-                "title": c.find("a", ).string,
-                "href": c.find("a", )["href"],
-                "summary": list(c.find("dd", ).stripped_strings)[0],
-            }
-
-            article["id"] = cat_info["name"] + "-" + "-".join(ID_EXTRACTOR.match(article["href"]).groups())
-            article["content"], article["source"] = get_article_content(article["href"])
-            if article["content"]:
-                # articles.append(article)
-                article_num += 1
-                try:
-                    articles_col.insert(article)
-                except pymongo.errors.DuplicateKeyError:
-                    continue
+            article = {}
+            try:
+                article["category"]     = cat_info["name"]
+                article["sub_category"] = c.find("span", "t-tit").string.strip("[]")
+                article["date"]         = c.find("span", "t-time").string
+                article["title"]        = c.find("a", ).string
+                article["href"]         = c.find("a", )["href"]
+                article["summary"]      = list(c.find("dd", ).stripped_strings)[0]
+                article["id"]           = cat_info["name"] + "-" + "-".join(ID_EXTRACTOR.match(article["href"]).groups())
+                article["content"], article["source"] = get_article_content(article["href"])
+                if article["content"]:
+                    # articles.append(article)
+                    article_num += 1
+                    try:
+                        articles_col.insert(article)
+                    except pymongo.errors.DuplicateKeyError:
+                        continue
+            except Exception as e:
+                if article:
+                    LOG.error("Failed in handling reason:%s, html:%s" % (e, article))
+                continue
         LOG.info("Get %d articles in page %d, on %s" % (article_num, page_num, date))
         return page_count, article_num
 
@@ -118,7 +123,7 @@ def worker(cat_index):
         "Referer": "http://roll.%s.qq.com/index.htm" % cat_info["root_cat"]
     })
 
-    day = datetime.datetime(year=2016, month=11, day=18)
+    day = datetime.datetime(year=2016, month=11, day=8)
     record_col.find({"category": cat_info["name"]})
 
     cat_info["num"] = 0
@@ -177,7 +182,7 @@ if __name__ == "__main__":
     LOG = logging.getLogger('ta')
     LOG.setLevel(logging.DEBUG)
 
-    file_handler = logging.FileHandler(filename="log.log")
+    file_handler = logging.FileHandler(filename="log.log", encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(threadName)-7s - %(levelname)s - %(message)s')
     file_handler.setFormatter(formatter)
@@ -189,14 +194,15 @@ if __name__ == "__main__":
     LOG.addHandler(stream_handler)
 
     threads = []
-    for idx in range(len(CATEGORY_INFO)):
-        threads.append(
-            threading.Thread(
-                target=worker,
-                args=(idx, ),
-                name=CATEGORY_INFO[idx][0]
-            )
+    # for idx in range(len(CATEGORY_INFO)):
+    idx = 10
+    threads.append(
+        threading.Thread(
+            target=worker,
+            args=(idx, ),
+            name=CATEGORY_INFO[idx][0]
         )
+    )
 
     for t in threads:
         t.start()
