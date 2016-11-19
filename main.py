@@ -199,15 +199,14 @@ if __name__ == "__main__":
     LOG.addHandler(stream_handler)
 
     threads = []
-    # for idx in range(len(CATEGORY_INFO)):
-    idx = 10
-    threads.append(
-        threading.Thread(
-            target=worker,
-            args=(idx, ),
-            name=CATEGORY_INFO[idx][0]
+    for idx in range(len(CATEGORY_INFO)):
+        threads.append(
+            threading.Thread(
+                target=worker,
+                args=(idx, ),
+                name=CATEGORY_INFO[idx][0]
+            )
         )
-    )
 
     for t in threads:
         t.start()
