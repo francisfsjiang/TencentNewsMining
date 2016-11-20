@@ -7,7 +7,7 @@ from model import Article, Record
 LOG = None
 
 
-class DBManager(object):
+class DBManagerMysql(object):
 
     def __init__(self, db_path, log):
         global LOG
@@ -63,3 +63,5 @@ class DBManager(object):
                 LOG.error("Insert record failed. Reason: %s. Record: %s" % (e, record_dict))
                 self.session.rollback()
                 break
+
+

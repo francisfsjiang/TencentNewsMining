@@ -5,10 +5,11 @@ import json
 import bs4
 import re
 import logging
-import threading
 import sys
+import os
+import multiprocessing
 
-from db_manager import DBManager
+from db_manager import DBManagerMysql
 
 TIME_FORMAT = "%Y-%m-%d"
 ID_EXTRACTOR = re.compile(r"http://[\w]*.qq.com/a/([\d]*)/([\d]*).htm")
@@ -97,7 +98,6 @@ def get_page(cat_info, session, date, page_num, db_manager):
 
 
 def worker(cat_index):
-    db_manager = DBManager(sys.argv[1], LOG)
 
     cat_info = {
         "name": CATEGORY_INFO[cat_index][0],
@@ -105,8 +105,25 @@ def worker(cat_index):
         "sub_cats": ",".join(CATEGORY_INFO[cat_index][2]),
         "url_template": CATEGORY_INFO[cat_index][3],
     }
+
+    LOG = logging.getLogger(cat_info["name"])
+    LOG.setLevel(logging.DEBUG)
+
+    file_handler = logging.FileHandler(filename=os.path.join(sys.argv[2], cat_info["name"] + ".log"), encoding="utf-8")
+    file_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(processName)-7s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    LOG.addHandler(file_handler)
+
+    stream_handler = logging.StreamHandler(sys.stderr)
+    stream_handler.setLevel(logging.ERROR)
+    stream_handler.setFormatter(formatter)
+    LOG.addHandler(stream_handler)
+
     LOG.info(cat_info["name"])
     LOG.info(cat_info)
+
+    db_manager = DBManagerMysql(sys.argv[1], LOG)
 
     session = requests.session()
     session.headers.update({
@@ -170,21 +187,7 @@ def worker(cat_index):
 
 if __name__ == "__main__":
 
-    LOG = logging.getLogger('ta')
-    LOG.setLevel(logging.DEBUG)
-
-    file_handler = logging.FileHandler(filename=sys.argv[2], encoding="utf-8")
-    file_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(threadName)-7s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
-    LOG.addHandler(file_handler)
-
-    stream_handler = logging.StreamHandler(sys.stderr)
-    stream_handler.setLevel(logging.ERROR)
-    stream_handler.setFormatter(formatter)
-    LOG.addHandler(stream_handler)
-
-    threads = []
+    processes = []
 
     # idx = 7
     # threads.append(
@@ -196,16 +199,16 @@ if __name__ == "__main__":
     # )
 
     for idx in range(len(CATEGORY_INFO)):
-        threads.append(
-            threading.Thread(
+        processes.append(
+            multiprocessing.Process(
                 target=worker,
                 args=(idx, ),
                 name=CATEGORY_INFO[idx][0]
             )
         )
 
-    for t in threads:
-        t.start()
+    for p in processes:
+        p.start()
 
-    for t in threads:
-        t.join()
+    for p in processes:
+        p.join()
