@@ -12,7 +12,7 @@ class DBManager(object):
     def __init__(self, db_path, log):
         global LOG
         self.engine = sqlalchemy.create_engine(db_path, pool_recycle=200)
-        self.session = sqlalchemy.orm.sessionmaker(bind=engine)()
+        self.session = sqlalchemy.orm.sessionmaker(bind=self.engine)()
         LOG = log
 
     def has_order(self, record_id):
