@@ -150,7 +150,6 @@ def worker(cat_index):
                 cat_info["num"] += int(query[0].num)
                 continue
             article_num = 0
-            db_session
 
             page_count, tmp_article_num = get_page(
                 cat_info,
