@@ -41,7 +41,7 @@ def get_article_content(url):
 
         return content, source
 
-    except:
+    except Exception as e:
         return None, None
 
 
