@@ -25,29 +25,40 @@ class DBManager(object):
         return 0, 0
 
     def insert_article(self, article_dict):
-        try:
-            article_obj = Article(
-                **article_dict
-            )
-            self.session.add(article_obj)
-            self.session.commit()
+        while 1:
+            try:
+                article_obj = Article(
+                    **article_dict
+                )
+                self.session.add(article_obj)
+                self.session.commit()
+                break
 
-        except sqlalchemy.exc.IntegrityError as e:
-            self.session.rollback()
-        except Exception as e:
-            LOG.error("Insert article failed. Reason: %s. Artcile: %s" % (e, article_dict))
-            self.session.rollback()
+            except sqlalchemy.exc.IntegrityError as e:
+                self.session.rollback()
+                break
+            except sqlalchemy.exc.OperationalError as e:
+                LOG.error("Insert article failed operational error. Reason: %s. Record: %s" % (e, article_dict))
+                self.session.rollback()
+            except Exception as e:
+                LOG.error("Insert article failed. Reason: %s. Artcile: %s" % (e, article_dict))
+                self.session.rollback()
+                break
 
     def insert_record(self, record_dict):
-        try:
-            article_obj = Record(
-                **record_dict
-            )
-            self.session.add(article_obj)
-            self.session.commit()
+        while 1:
+            try:
+                article_obj = Record(
+                    **record_dict
+                )
+                self.session.add(article_obj)
+                self.session.commit()
+                break
 
-        except sqlalchemy.exc.IntegrityError as e:
-            self.session.rollback()
-        except Exception as e:
-            LOG.error("Insert record failed. Reason: %s. Record: %s" % (e, record_dict))
-            self.session.rollback()
+            except sqlalchemy.exc.OperationalError as e:
+                LOG.error("Insert record failed operational error. Reason: %s. Record: %s" % (e, record_dict))
+                self.session.rollback()
+            except Exception as e:
+                LOG.error("Insert record failed. Reason: %s. Record: %s" % (e, record_dict))
+                self.session.rollback()
+                break
