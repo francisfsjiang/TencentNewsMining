@@ -4,16 +4,12 @@ import sqlalchemy.exc
 
 from model import Article, Record
 
-LOG = None
-
 
 class DBManagerMysql(object):
 
-    def __init__(self, db_path, log):
-        global LOG
+    def __init__(self, db_path):
         self.engine = sqlalchemy.create_engine(db_path, pool_recycle=200)
         self.session = sqlalchemy.orm.sessionmaker(bind=self.engine)()
-        LOG = log
 
     def has_order(self, record_id):
         try:
@@ -21,7 +17,7 @@ class DBManagerMysql(object):
             if query.count() > 0:
                 return query.count(), int(query[0].num)
         except Exception as e:
-            LOG.error("Check order failed. %s" % e)
+            print("Check order failed. %s" % e)
             self.session.rollback()
         return 0, 0
 
@@ -39,10 +35,10 @@ class DBManagerMysql(object):
                 self.session.rollback()
                 break
             except sqlalchemy.exc.OperationalError as e:
-                LOG.error("Insert article failed operational error. Reason: %s. Record: %s" % (e, article_dict))
+                print("Insert article failed operational error. Reason: %s. Record: %s" % (e, article_dict))
                 self.session.rollback()
             except Exception as e:
-                LOG.error("Insert article failed. Reason: %s. Artcile: %s" % (e, article_dict))
+                print("Insert article failed. Reason: %s. Artcile: %s" % (e, article_dict))
                 self.session.rollback()
                 break
 
@@ -57,10 +53,10 @@ class DBManagerMysql(object):
                 break
 
             except sqlalchemy.exc.OperationalError as e:
-                LOG.error("Insert record failed operational error. Reason: %s. Record: %s" % (e, record_dict))
+                print("Insert record failed operational error. Reason: %s. Record: %s" % (e, record_dict))
                 self.session.rollback()
             except Exception as e:
-                LOG.error("Insert record failed. Reason: %s. Record: %s" % (e, record_dict))
+                print("Insert record failed. Reason: %s. Record: %s" % (e, record_dict))
                 self.session.rollback()
                 break
 

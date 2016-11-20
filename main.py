@@ -14,8 +14,6 @@ from db_manager import DBManagerMysql
 TIME_FORMAT = "%Y-%m-%d"
 ID_EXTRACTOR = re.compile(r"http://[\w]*.qq.com/a/([\d]*)/([\d]*).htm")
 
-LOG = None
-
 CATEGORY_INFO = [
     ("news", "news", ["newsgn", "newssh"], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
     ("army", "news", ["milite"], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
@@ -86,19 +84,19 @@ def get_page(cat_info, session, date, page_num, db_manager):
 
             except Exception as e:
                 if article:
-                    LOG.error("Failed in handling reason:%s, html:%s" % (e, article))
+                    print("Failed in handling reason:%s, html:%s" % (e, article))
                 else:
-                    LOG.error("Failed in handling reason:%s" % (e,))
-        LOG.info("Get %d articles in page %d, on %s" % (article_num, page_num, date))
+                    print("Failed in handling reason:%s" % (e,))
+        # LOG.info("Get %d articles in page %d, on %s" % (article_num, page_num, date))
         return page_count, article_num
 
     except Exception as e:
-        LOG.error("Failed in gat:%s date:%s page:%d, reason:%s" % (cat_info["name"], date, page_num, e))
+        print("Failed in gat:%s date:%s page:%d, reason:%s" % (cat_info["name"], date, page_num, e))
         return 0, 0
 
 
 def worker(cat_index):
-    global LOG
+    # global LOG
     cat_info = {
         "name": CATEGORY_INFO[cat_index][0],
         "root_cat": CATEGORY_INFO[cat_index][1],
@@ -106,24 +104,24 @@ def worker(cat_index):
         "url_template": CATEGORY_INFO[cat_index][3],
     }
 
-    LOG = logging.getLogger(cat_info["name"])
-    LOG.setLevel(logging.DEBUG)
+    # LOG = logging.getLogger(cat_info["name"])
+    # LOG.setLevel(logging.DEBUG)
+    # 
+    # file_handler = logging.FileHandler(filename=os.path.join(sys.argv[2], cat_info["name"] + ".log"), encoding="utf-8")
+    # file_handler.setLevel(logging.DEBUG)
+    # formatter = logging.Formatter('%(asctime)s - %(processName)-7s - %(levelname)s - %(message)s')
+    # file_handler.setFormatter(formatter)
+    # LOG.addHandler(file_handler)
+    # 
+    # stream_handler = logging.StreamHandler(sys.stderr)
+    # stream_handler.setLevel(logging.ERROR)
+    # stream_handler.setFormatter(formatter)
+    # LOG.addHandler(stream_handler)
+    # 
+    # LOG.info(cat_info["name"])
+    # LOG.info(cat_info)
 
-    file_handler = logging.FileHandler(filename=os.path.join(sys.argv[2], cat_info["name"] + ".log"), encoding="utf-8")
-    file_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(processName)-7s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
-    LOG.addHandler(file_handler)
-
-    stream_handler = logging.StreamHandler(sys.stderr)
-    stream_handler.setLevel(logging.ERROR)
-    stream_handler.setFormatter(formatter)
-    LOG.addHandler(stream_handler)
-
-    LOG.info(cat_info["name"])
-    LOG.info(cat_info)
-
-    db_manager = DBManagerMysql(sys.argv[1], LOG)
+    db_manager = DBManagerMysql(sys.argv[1])
 
     session = requests.session()
     session.headers.update({
@@ -136,7 +134,7 @@ def worker(cat_index):
     cat_info["num"] = 0
 
     while cat_info["num"] < 30000:
-        LOG.info(day.strftime(TIME_FORMAT))
+        # LOG.info(day.strftime(TIME_FORMAT))
 
         record_id = cat_info["name"] + "-" + day.strftime(TIME_FORMAT)
 
@@ -144,7 +142,7 @@ def worker(cat_index):
         try:
             result, query_num = db_manager.has_order(record_id)
             if result > 0:
-                LOG.info("Skip day %s" % day.strftime(TIME_FORMAT))
+                # LOG.info("Skip day %s" % day.strftime(TIME_FORMAT))
                 day -= datetime.timedelta(days=1)
                 cat_info["num"] += query_num
                 continue
@@ -178,9 +176,9 @@ def worker(cat_index):
 
             cat_info["num"] += article_num
 
-            LOG.info("Get %d articles on %s, total %d" % (article_num, day.strftime(TIME_FORMAT), cat_info["num"]))
+            # LOG.info("Get %d articles on %s, total %d" % (article_num, day.strftime(TIME_FORMAT), cat_info["num"]))
         except Exception as e:
-            LOG.error("Failed in gat:%s date:%s,reason: %s" % (cat_info["name"], day.strftime(TIME_FORMAT), e))
+            print("Failed in gat:%s date:%s,reason: %s" % (cat_info["name"], day.strftime(TIME_FORMAT), e))
 
         day -= datetime.timedelta(days=1)
 
