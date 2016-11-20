@@ -98,7 +98,7 @@ def get_page(cat_info, session, date, page_num, db_manager):
 
 
 def worker(cat_index):
-
+    global LOG
     cat_info = {
         "name": CATEGORY_INFO[cat_index][0],
         "root_cat": CATEGORY_INFO[cat_index][1],
