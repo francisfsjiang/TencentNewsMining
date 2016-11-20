@@ -5,7 +5,7 @@ import json
 import bs4
 import re
 import logging
-import threading
+import multiprocessing
 import sys
 
 import sqlalchemy
@@ -200,7 +200,7 @@ if __name__ == "__main__":
 
     file_handler = logging.FileHandler(filename="log.log", encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(threadName)-7s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(processName)-7s - %(levelname)s - %(message)s')
     file_handler.setFormatter(formatter)
     LOG.addHandler(file_handler)
 
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     stream_handler.setFormatter(formatter)
     LOG.addHandler(stream_handler)
 
-    threads = []
+    processes = []
 
     # idx = 7
     # threads.append(
@@ -221,16 +221,16 @@ if __name__ == "__main__":
     # )
 
     for idx in range(len(CATEGORY_INFO)):
-        threads.append(
-            threading.Thread(
+        processes.append(
+            multiprocessing.Process(
                 target=worker,
                 args=(idx, ),
                 name=CATEGORY_INFO[idx][0]
             )
         )
 
-    for t in threads:
-        t.start()
+    for p in processes:
+        p.start()
 
-    for t in threads:
-        t.join()
+    for p in processes:
+        p.join()
