@@ -5,12 +5,10 @@ import json
 import bs4
 import re
 import logging
-import multiprocessing
+import threading
 import sys
 
 from db_manager import DBManager
-
-from model import Article, Record
 
 TIME_FORMAT = "%Y-%m-%d"
 ID_EXTRACTOR = re.compile(r"http://[\w]*.qq.com/a/([\d]*)/([\d]*).htm")
@@ -177,7 +175,7 @@ if __name__ == "__main__":
 
     file_handler = logging.FileHandler(filename="log.log", encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(processName)-7s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(threadName)-7s - %(levelname)s - %(message)s')
     file_handler.setFormatter(formatter)
     LOG.addHandler(file_handler)
 
@@ -186,7 +184,7 @@ if __name__ == "__main__":
     stream_handler.setFormatter(formatter)
     LOG.addHandler(stream_handler)
 
-    processes = []
+    threads = []
 
     # idx = 7
     # threads.append(
@@ -198,16 +196,16 @@ if __name__ == "__main__":
     # )
 
     for idx in range(len(CATEGORY_INFO)):
-        processes.append(
-            multiprocessing.Process(
+        threads.append(
+            threading.Thread(
                 target=worker,
                 args=(idx, ),
                 name=CATEGORY_INFO[idx][0]
             )
         )
 
-    for p in processes:
-        p.start()
+    for t in threads:
+        t.start()
 
-    for p in processes:
-        p.join()
+    for t in threads:
+        t.join()
