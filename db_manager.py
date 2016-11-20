@@ -22,6 +22,7 @@ class DBManager(object):
                 return query.count(), int(query[0].num)
         except Exception as e:
             LOG.error("Check order failed. %s" % e)
+            self.session.rollback()
         return 0, 0
 
     def insert_article(self, article_dict):
