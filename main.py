@@ -11,6 +11,7 @@ import sys
 import sqlalchemy
 import sqlalchemy.orm
 import mysql.connector.errors
+import sqlalchemy.exc
 
 from model import Article, Record
 
@@ -20,28 +21,17 @@ ID_EXTRACTOR = re.compile(r"http://[\w]*.qq.com/a/([\d]*)/([\d]*).htm")
 LOG = None
 
 CATEGORY_INFO = [
-    ("news", "news", ["newsgn", "newssh"],
-     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("army", "news", ["milite"],
-     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("gnews", "news", ["newsgj"],
-     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("sports", "sports", [],
-     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("ent", "ent", [],
-     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("finance", "finance", [],
-     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("tech", "tech", [],
-     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("games", "games", [],
-     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("auto", "auto", [],
-     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("edu", "edu", [],
-     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
-    ("house", "house", [],
-     "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("news", "news", ["newsgn", "newssh"], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("army", "news", ["milite"], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("gnews", "news", ["newsgj"], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("sports", "sports", [], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("ent", "ent", [], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("finance", "finance", [], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("tech", "tech", [], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("games", "games", [], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("auto", "auto", [], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("edu", "edu", [], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
+    ("house", "house", [], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
 ]
 
 
@@ -74,7 +64,7 @@ def get_page(cat_info, session, date, page_num, db_session):
 
         j = json.loads(r.text)
         if j["response"]["code"] != '0':
-            return [], 0
+            return 0, 0
         soup = bs4.BeautifulSoup(j["data"]["article_info"], "html5lib")
 
         page_count = j["data"]["count"]
@@ -96,16 +86,19 @@ def get_page(cat_info, session, date, page_num, db_session):
                 if article["content"]:
                     # articles.append(article)
                     try:
-                        article = Article(
+                        article_obj = Article(
                             **article
                         )
-                        db_session.add(article)
+                        db_session.add(article_obj)
                         db_session.commit()
                         article_num += 1
 
                         continue
+                    except sqlalchemy.exc.IntegrityError as e:
+                        LOG.info("Insert article duplicated, %s" % article["id"])
                     except Exception as e:
-                        LOG.info("Insert failed, %s" % e)
+                        LOG.error("Insert failed, %s" % e)
+                    finally:
                         db_session.rollback()
             except Exception as e:
                 if article:
@@ -117,11 +110,11 @@ def get_page(cat_info, session, date, page_num, db_session):
 
     except Exception as e:
         LOG.error("Failed in gat:%s date:%s page:%d, reason:%s" % (cat_info["name"], date, page_num, e))
-        return [], 0
+        return 0, 0
 
 
 def worker(cat_index):
-    engine = sqlalchemy.create_engine(sys.argv[1])
+    engine = sqlalchemy.create_engine(sys.argv[1], pool_recycle=200)
     db_session = sqlalchemy.orm.sessionmaker(bind=engine)()
 
     cat_info = {
@@ -157,6 +150,7 @@ def worker(cat_index):
                 cat_info["num"] += int(query[0].num)
                 continue
             article_num = 0
+            db_session
 
             page_count, tmp_article_num = get_page(
                 cat_info,
@@ -187,14 +181,15 @@ def worker(cat_index):
                 db_session.commit()
 
             except Exception as e:
-                LOG.info("Insert record failed")
+                LOG.error("Insert record failed, reason:%s" % e)
+            finally:
                 db_session.rollback()
 
             cat_info["num"] += article_num
 
             LOG.info("Get %d articles on %s, total %d" % (article_num, day.strftime(TIME_FORMAT), cat_info["num"]))
         except Exception as e:
-            LOG.error("Failed in cat:%s date:%s,reason: %s" % (cat_info["name"], day.strftime(TIME_FORMAT), e))
+            LOG.error("Failed in gat:%s date:%s,reason: %s" % (cat_info["name"], day.strftime(TIME_FORMAT), e))
 
         day -= datetime.timedelta(days=1)
 
@@ -217,7 +212,7 @@ if __name__ == "__main__":
 
     threads = []
 
-    # idx = 8
+    # idx = 7
     # threads.append(
     #     threading.Thread(
     #         target=worker,
