@@ -173,7 +173,7 @@ if __name__ == "__main__":
     LOG = logging.getLogger('ta')
     LOG.setLevel(logging.DEBUG)
 
-    file_handler = logging.FileHandler(filename="log.log", encoding="utf-8")
+    file_handler = logging.FileHandler(filename=sys.argv[2], encoding="utf-8")
     file_handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(threadName)-7s - %(levelname)s - %(message)s')
     file_handler.setFormatter(formatter)
