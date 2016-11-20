@@ -10,6 +10,7 @@ import sys
 
 import sqlalchemy
 import sqlalchemy.orm
+import mysql.connector.errors
 
 from model import Article, Record
 
@@ -94,27 +95,28 @@ def get_page(cat_info, session, date, page_num, db_session):
                 article["content"], article["source"] = get_article_content(article["href"])
                 if article["content"]:
                     # articles.append(article)
-                    article_num += 1
                     try:
                         article = Article(
                             **article
                         )
                         db_session.add(article)
+                        db_session.commit()
+                        article_num += 1
 
                         continue
                     except Exception as e:
-                        LOG.error("Insert failed, %s" % e)
+                        LOG.info("Insert failed, %s" % e)
+                        db_session.rollback()
             except Exception as e:
                 if article:
                     LOG.error("Failed in handling reason:%s, html:%s" % (e, article))
                 else:
                     LOG.error("Failed in handling reason:%s" % (e,))
-        db_session.commit()
         LOG.info("Get %d articles in page %d, on %s" % (article_num, page_num, date))
         return page_count, article_num
 
     except Exception as e:
-        LOG.error("Failed in cat:%s date:%s page:%d, reason:%s" % (cat_info["name"], date, page_num, e))
+        LOG.error("Failed in gat:%s date:%s page:%d, reason:%s" % (cat_info["name"], date, page_num, e))
         return [], 0
 
 
@@ -137,7 +139,7 @@ def worker(cat_index):
         "Referer": "http://roll.%s.qq.com/index.htm" % cat_info["root_cat"]
     })
 
-    day = datetime.datetime(year=2016, month=11, day=18)
+    day = datetime.datetime(year=2016, month=11, day=19)
 
     cat_info["num"] = 0
 
@@ -148,12 +150,11 @@ def worker(cat_index):
 
         # skip this day
         try:
-            result = db_session.query(Record).filter(Record.id == record_id).count()
-
-            if result > 0:
+            query = db_session.query(Record).filter(Record.id == record_id)
+            if query.count() > 0:
                 LOG.info("Skip day %s" % day.strftime(TIME_FORMAT))
                 day -= datetime.timedelta(days=1)
-                cat_info["num"] += int(doc["num"])
+                cat_info["num"] += int(query[0].num)
                 continue
             article_num = 0
 
@@ -176,13 +177,18 @@ def worker(cat_index):
                 )
                 article_num += tmp_article_num
 
-            new_record = Record(
-                id=record_id,
-                category=cat_info["name"],
-                num=article_num
-            )
-            db_session.add(new_record)
-            db_session.commit()
+            try:
+                new_record = Record(
+                    id=record_id,
+                    category=cat_info["name"],
+                    num=article_num
+                )
+                db_session.add(new_record)
+                db_session.commit()
+
+            except Exception as e:
+                LOG.info("Insert record failed")
+                db_session.rollback()
 
             cat_info["num"] += article_num
 
@@ -211,7 +217,7 @@ if __name__ == "__main__":
 
     threads = []
 
-    # idx = 0
+    # idx = 8
     # threads.append(
     #     threading.Thread(
     #         target=worker,

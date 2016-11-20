@@ -1,7 +1,8 @@
 import sys
 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, UnicodeText
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy import create_engine
 
 Base = declarative_base()
@@ -15,9 +16,9 @@ class Article(Base):
      sub_category   = Column(String(30))
      date           = Column(String(30))
      href           = Column(String(200))
-     title          = Column(UnicodeText)
-     summary        = Column(UnicodeText)
-     content        = Column(UnicodeText)
+     title          = Column(LONGTEXT)
+     summary        = Column(LONGTEXT)
+     content        = Column(LONGTEXT)
      source         = Column(String(30))
 
 
@@ -29,6 +30,6 @@ class Record(Base):
      num            = Column(Integer)
 
 if __name__ == "__main__":
-     engine = create_engine(sys.argv[1], encoding='utf-8')
+     engine = create_engine(sys.argv[1])
 
      Base.metadata.create_all(engine)
