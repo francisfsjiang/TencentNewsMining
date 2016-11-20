@@ -8,10 +8,7 @@ import logging
 import multiprocessing
 import sys
 
-import sqlalchemy
-import sqlalchemy.orm
-import mysql.connector.errors
-import sqlalchemy.exc
+from db_manager import DBManager
 
 from model import Article, Record
 
@@ -50,7 +47,7 @@ def get_article_content(url):
         return None, None
 
 
-def get_page(cat_info, session, date, page_num, db_session):
+def get_page(cat_info, session, date, page_num, db_manager):
     rand_num = random.randrange(0, 10 ** 16 - 1)
     u = cat_info["url_template"] % {
         "category": cat_info["root_cat"],
@@ -85,21 +82,9 @@ def get_page(cat_info, session, date, page_num, db_session):
                 article["content"], article["source"] = get_article_content(article["href"])
                 if article["content"]:
                     # articles.append(article)
-                    try:
-                        article_obj = Article(
-                            **article
-                        )
-                        db_session.add(article_obj)
-                        db_session.commit()
-                        article_num += 1
+                    db_manager.insert_article(article)
+                    article_num += 1
 
-                        continue
-                    except sqlalchemy.exc.IntegrityError as e:
-                        LOG.info("Insert article duplicated, %s" % article["id"])
-                    except Exception as e:
-                        LOG.error("Insert failed, %s" % e)
-                    finally:
-                        db_session.rollback()
             except Exception as e:
                 if article:
                     LOG.error("Failed in handling reason:%s, html:%s" % (e, article))
@@ -114,8 +99,7 @@ def get_page(cat_info, session, date, page_num, db_session):
 
 
 def worker(cat_index):
-    engine = sqlalchemy.create_engine(sys.argv[1], pool_recycle=200)
-    db_session = sqlalchemy.orm.sessionmaker(bind=engine)()
+    db_manager = DBManager(sys.argv[1], LOG)
 
     cat_info = {
         "name": CATEGORY_INFO[cat_index][0],
@@ -143,11 +127,11 @@ def worker(cat_index):
 
         # skip this day
         try:
-            query = db_session.query(Record).filter(Record.id == record_id)
-            if query.count() > 0:
+            result, query_num = db_manager.has_order(record_id)
+            if result > 0:
                 LOG.info("Skip day %s" % day.strftime(TIME_FORMAT))
                 day -= datetime.timedelta(days=1)
-                cat_info["num"] += int(query[0].num)
+                cat_info["num"] += query_num
                 continue
             article_num = 0
 
@@ -156,7 +140,7 @@ def worker(cat_index):
                 session,
                 day.strftime(TIME_FORMAT),
                 1,
-                db_session
+                db_manager
             )
             article_num += tmp_article_num
 
@@ -166,23 +150,16 @@ def worker(cat_index):
                     session,
                     day.strftime(TIME_FORMAT),
                     2 + i,
-                    db_session
+                    db_manager
                 )
                 article_num += tmp_article_num
 
-            try:
-                new_record = Record(
-                    id=record_id,
-                    category=cat_info["name"],
-                    num=article_num
-                )
-                db_session.add(new_record)
-                db_session.commit()
-
-            except Exception as e:
-                LOG.error("Insert record failed, reason:%s" % e)
-            finally:
-                db_session.rollback()
+            new_record = {
+                "id": record_id,
+                "category": cat_info["name"],
+                "num": article_num,
+            }
+            db_manager.insert_record(new_record)
 
             cat_info["num"] += article_num
 
