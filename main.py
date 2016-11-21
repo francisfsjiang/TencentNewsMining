@@ -150,7 +150,7 @@ def worker(cat_index):
 
         record.date -= datetime.timedelta(days=1)
         record = db_manager.update_record(record)
-    LOG.info("%s is ready. %d" % (cat_info["name"], cat_info["num"]))
+    LOG.info("%s is ready. %d" % (cat_info["name"], record.num))
 
 
 if __name__ == "__main__":
