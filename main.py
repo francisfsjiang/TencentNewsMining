@@ -114,12 +114,11 @@ def worker(cat_index):
         "Referer": "http://roll.%s.qq.com/index.htm" % cat_info["root_cat"]
     })
 
-    day = datetime.datetime(year=2016, month=11, day=19)
+    day = datetime.datetime(year=2016, month=11, day=20)
 
     cat_info["num"] = 0
 
     while cat_info["num"] < 30000:
-        LOG.info(day.strftime(TIME_FORMAT))
 
         record_id = cat_info["name"] + "-" + day.strftime(TIME_FORMAT)
 
@@ -127,11 +126,12 @@ def worker(cat_index):
         try:
             result, query_num = db_manager.has_order(record_id)
             if result > 0:
-                LOG.info("Skip day %s" % day.strftime(TIME_FORMAT))
+                # LOG.info("Skip day %s" % day.strftime(TIME_FORMAT))
                 day -= datetime.timedelta(days=1)
                 cat_info["num"] += query_num
                 continue
             article_num = 0
+            LOG.info(day.strftime(TIME_FORMAT))
 
             page_count, tmp_article_num = get_page(
                 cat_info,
@@ -166,6 +166,7 @@ def worker(cat_index):
             LOG.error("Failed in gat:%s date:%s,reason: %s" % (cat_info["name"], day.strftime(TIME_FORMAT), e))
 
         day -= datetime.timedelta(days=1)
+    LOG.info("%s is ready. %d" % (cat_info["name"], cat_info["num"]))
 
 
 if __name__ == "__main__":
@@ -186,7 +187,7 @@ if __name__ == "__main__":
 
     threads = []
 
-    # idx = 7
+    # idx = 1
     # threads.append(
     #     threading.Thread(
     #         target=worker,
