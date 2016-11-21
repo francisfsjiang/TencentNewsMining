@@ -140,8 +140,6 @@ def worker(cat_index):
                     record.page,
                     db_manager
                 )
-                if cat_info["name"] == "games":
-                    LOG.info("page_count %d" % page_count)
                 record.page += 1
                 record.num += tmp_article_num
                 record = db_manager.update_record(record)
