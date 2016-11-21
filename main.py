@@ -128,7 +128,7 @@ def worker(cat_index):
 
     last_day = datetime.date(year=2009, month=1, day=1)
 
-    while record.num < 20000:
+    while record.num < 30000:
         if record.date < last_day:
             LOG.critical("Reach last day.")
             return 0
