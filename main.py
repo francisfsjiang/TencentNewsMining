@@ -126,7 +126,7 @@ def worker(cat_index):
 
     LOG.info(record.date.strftime(TIME_FORMAT))
 
-    while record.num < 30000:
+    while record.num < 20000:
 
         try:
 
