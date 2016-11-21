@@ -32,11 +32,13 @@ CATEGORY_INFO = [
 
 def get_article_content(url):
     try:
-        r = requests.get(url)
+        r = requests.get(url, timeout=5)
         soup = bs4.BeautifulSoup(r.text, "html5lib")
         art_div = soup.find("div", id="Cnt-Main-Article-QQ")
         source_span = soup.find(attrs={"bosszone": "jgname"})
         content = "".join(art_div.stripped_strings)
+        if "return" in content and "this" in content and "var" in content:
+            content = "".join(filter(lambda x: ord(x) > 127, content))
         source = "".join(source_span.stripped_strings)
 
         return content, source
@@ -105,7 +107,6 @@ def worker(cat_index):
         "sub_cats": ",".join(CATEGORY_INFO[cat_index][2]),
         "url_template": CATEGORY_INFO[cat_index][3],
     }
-    LOG.info(cat_info["name"])
     LOG.info(cat_info)
 
     session = requests.session()
@@ -114,58 +115,41 @@ def worker(cat_index):
         "Referer": "http://roll.%s.qq.com/index.htm" % cat_info["root_cat"]
     })
 
-    day = datetime.datetime(year=2016, month=11, day=20)
+    record = db_manager.get_record(cat_info["name"])
 
-    cat_info["num"] = 0
+    LOG.info("cat: %s, total: %d, day: %s, page: %d" %(
+        cat_info["name"],
+        record.num,
+        record.date.strftime(TIME_FORMAT),
+        record.page
+    ))
 
-    while cat_info["num"] < 30000:
+    LOG.info(record.date.strftime(TIME_FORMAT))
 
-        record_id = cat_info["name"] + "-" + day.strftime(TIME_FORMAT)
+    while record.num < 30000:
 
-        # skip this day
         try:
-            result, query_num = db_manager.has_order(record_id)
-            if result > 0:
-                # LOG.info("Skip day %s" % day.strftime(TIME_FORMAT))
-                day -= datetime.timedelta(days=1)
-                cat_info["num"] += query_num
-                continue
-            article_num = 0
-            LOG.info(day.strftime(TIME_FORMAT))
 
-            page_count, tmp_article_num = get_page(
-                cat_info,
-                session,
-                day.strftime(TIME_FORMAT),
-                1,
-                db_manager
-            )
-            article_num += tmp_article_num
+            page_count = record.page
 
-            for i in range(page_count - 1):
-                _, tmp_article_num = get_page(
+            while record.page <= page_count:
+                page_count, tmp_article_num = get_page(
                     cat_info,
                     session,
-                    day.strftime(TIME_FORMAT),
-                    2 + i,
+                    record.date.strftime(TIME_FORMAT),
+                    record.page,
                     db_manager
                 )
-                article_num += tmp_article_num
+                record.page += 1
+                record.num += tmp_article_num
+                record = db_manager.update_record(record)
 
-            new_record = {
-                "id": record_id,
-                "category": cat_info["name"],
-                "num": article_num,
-            }
-            db_manager.insert_record(new_record)
-
-            cat_info["num"] += article_num
-
-            LOG.info("Get %d articles on %s, total %d" % (article_num, day.strftime(TIME_FORMAT), cat_info["num"]))
+            LOG.info("On category %s, total %d" % (cat_info["name"], record.date.strftime(TIME_FORMAT)))
         except Exception as e:
-            LOG.error("Failed in gat:%s date:%s,reason: %s" % (cat_info["name"], day.strftime(TIME_FORMAT), e))
+            LOG.error("Failed in gat:%s date:%s,reason: %s" % (cat_info["name"], record.date.strftime(TIME_FORMAT), e))
 
-        day -= datetime.timedelta(days=1)
+        record.date -= datetime.timedelta(days=1)
+        record = db_manager.update_record(record)
     LOG.info("%s is ready. %d" % (cat_info["name"], cat_info["num"]))
 
 
@@ -187,23 +171,23 @@ if __name__ == "__main__":
 
     threads = []
 
-    # idx = 1
-    # threads.append(
-    #     threading.Thread(
-    #         target=worker,
-    #         args=(idx,),
-    #         name=CATEGORY_INFO[idx][0]
-    #     )
-    # )
-
-    for idx in range(len(CATEGORY_INFO)):
-        threads.append(
-            threading.Thread(
-                target=worker,
-                args=(idx, ),
-                name=CATEGORY_INFO[idx][0]
-            )
+    idx = 8
+    threads.append(
+        threading.Thread(
+            target=worker,
+            args=(idx,),
+            name=CATEGORY_INFO[idx][0]
         )
+    )
+
+    # for idx in range(len(CATEGORY_INFO)):
+    #     threads.append(
+    #         threading.Thread(
+    #             target=worker,
+    #             args=(idx, ),
+    #             name=CATEGORY_INFO[idx][0]
+    #         )
+    #     )
 
     for t in threads:
         t.start()
