@@ -171,23 +171,23 @@ if __name__ == "__main__":
 
     threads = []
 
-    idx = 8
-    threads.append(
-        threading.Thread(
-            target=worker,
-            args=(idx,),
-            name=CATEGORY_INFO[idx][0]
-        )
-    )
-
-    # for idx in range(len(CATEGORY_INFO)):
-    #     threads.append(
-    #         threading.Thread(
-    #             target=worker,
-    #             args=(idx, ),
-    #             name=CATEGORY_INFO[idx][0]
-    #         )
+    # idx = 8
+    # threads.append(
+    #     threading.Thread(
+    #         target=worker,
+    #         args=(idx,),
+    #         name=CATEGORY_INFO[idx][0]
     #     )
+    # )
+
+    for idx in range(len(CATEGORY_INFO)):
+        threads.append(
+            threading.Thread(
+                target=worker,
+                args=(idx, ),
+                name=CATEGORY_INFO[idx][0]
+            )
+        )
 
     for t in threads:
         t.start()
