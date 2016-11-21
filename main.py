@@ -144,7 +144,7 @@ def worker(cat_index):
                 record.num += tmp_article_num
                 record = db_manager.update_record(record)
 
-            LOG.info("On category %s, total %d" % (cat_info["name"], record.date.strftime(TIME_FORMAT)))
+            LOG.info("On category %s, total %d, date: %s" % (cat_info["name"], record.num, record.date.strftime(TIME_FORMAT)))
         except Exception as e:
             LOG.error("Failed in gat:%s date:%s,reason: %s" % (cat_info["name"], record.date.strftime(TIME_FORMAT), e))
 
