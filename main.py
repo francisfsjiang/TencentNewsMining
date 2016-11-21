@@ -140,6 +140,8 @@ def worker(cat_index):
                     record.page,
                     db_manager
                 )
+                if cat_info["name"] == "games":
+                    LOG.info("page_count %d" % page_count)
                 record.page += 1
                 record.num += tmp_article_num
                 record = db_manager.update_record(record)
@@ -147,7 +149,7 @@ def worker(cat_index):
             LOG.info("On category %s, total %d, date: %s" % (cat_info["name"], record.num, record.date.strftime(TIME_FORMAT)))
         except Exception as e:
             LOG.error("Failed in gat:%s date:%s,reason: %s" % (cat_info["name"], record.date.strftime(TIME_FORMAT), e))
-
+        record.page = 1
         record.date -= datetime.timedelta(days=1)
         record = db_manager.update_record(record)
     LOG.info("%s is ready. %d" % (cat_info["name"], record.num))
