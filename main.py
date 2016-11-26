@@ -5,14 +5,15 @@ import json
 import bs4
 import re
 import logging
+import threading
 import sys
-import os
-import multiprocessing
 
-from db_manager import DBManagerMysql
+from db_manager import DBManager
 
 TIME_FORMAT = "%Y-%m-%d"
 ID_EXTRACTOR = re.compile(r"http://[\w]*.qq.com/a/([\d]*)/([\d]*).htm")
+
+LOG = None
 
 CATEGORY_INFO = [
     ("news", "news", ["newsgn", "newssh"], "http://roll.%(category)s.qq.com/interface/roll.php?0.%(rand_num)d&cata=%(sub_cats)s&site=%(category)s&date=%(date)s&page=%(page_num)d&mode=2&of=json"),
@@ -31,11 +32,13 @@ CATEGORY_INFO = [
 
 def get_article_content(url):
     try:
-        r = requests.get(url)
+        r = requests.get(url, timeout=5)
         soup = bs4.BeautifulSoup(r.text, "html5lib")
         art_div = soup.find("div", id="Cnt-Main-Article-QQ")
         source_span = soup.find(attrs={"bosszone": "jgname"})
         content = "".join(art_div.stripped_strings)
+        if "return" in content and "this" in content and "var" in content:
+            content = "".join(filter(lambda x: ord(x) > 127, content))
         source = "".join(source_span.stripped_strings)
 
         return content, source
@@ -84,44 +87,27 @@ def get_page(cat_info, session, date, page_num, db_manager):
 
             except Exception as e:
                 if article:
-                    print("Failed in handling reason:%s, html:%s" % (e, article))
+                    LOG.error("Failed in handling reason:%s, html:%s" % (e, article))
                 else:
-                    print("Failed in handling reason:%s" % (e,))
-        # LOG.info("Get %d articles in page %d, on %s" % (article_num, page_num, date))
+                    LOG.error("Failed in handling reason:%s" % (e,))
+        LOG.info("Get %d articles in page %d, on %s" % (article_num, page_num, date))
         return page_count, article_num
 
     except Exception as e:
-        print("Failed in gat:%s date:%s page:%d, reason:%s" % (cat_info["name"], date, page_num, e))
+        LOG.error("Failed in gat:%s date:%s page:%d, reason:%s" % (cat_info["name"], date, page_num, e))
         return 0, 0
 
 
 def worker(cat_index):
-    # global LOG
+    db_manager = DBManager(sys.argv[1], LOG)
+
     cat_info = {
         "name": CATEGORY_INFO[cat_index][0],
         "root_cat": CATEGORY_INFO[cat_index][1],
         "sub_cats": ",".join(CATEGORY_INFO[cat_index][2]),
         "url_template": CATEGORY_INFO[cat_index][3],
     }
-
-    # LOG = logging.getLogger(cat_info["name"])
-    # LOG.setLevel(logging.DEBUG)
-    # 
-    # file_handler = logging.FileHandler(filename=os.path.join(sys.argv[2], cat_info["name"] + ".log"), encoding="utf-8")
-    # file_handler.setLevel(logging.DEBUG)
-    # formatter = logging.Formatter('%(asctime)s - %(processName)-7s - %(levelname)s - %(message)s')
-    # file_handler.setFormatter(formatter)
-    # LOG.addHandler(file_handler)
-    # 
-    # stream_handler = logging.StreamHandler(sys.stderr)
-    # stream_handler.setLevel(logging.ERROR)
-    # stream_handler.setFormatter(formatter)
-    # LOG.addHandler(stream_handler)
-    # 
-    # LOG.info(cat_info["name"])
-    # LOG.info(cat_info)
-
-    db_manager = DBManagerMysql(sys.argv[1])
+    LOG.info(cat_info)
 
     session = requests.session()
     session.headers.update({
@@ -129,65 +115,68 @@ def worker(cat_index):
         "Referer": "http://roll.%s.qq.com/index.htm" % cat_info["root_cat"]
     })
 
-    day = datetime.datetime(year=2016, month=11, day=19)
+    record = db_manager.get_record(cat_info["name"])
 
-    cat_info["num"] = 0
+    LOG.info("cat: %s, total: %d, day: %s, page: %d" %(
+        cat_info["name"],
+        record.num,
+        record.date.strftime(TIME_FORMAT),
+        record.page
+    ))
 
-    while cat_info["num"] < 30000:
-        # LOG.info(day.strftime(TIME_FORMAT))
+    LOG.info(record.date.strftime(TIME_FORMAT))
 
-        record_id = cat_info["name"] + "-" + day.strftime(TIME_FORMAT)
+    last_day = datetime.date(year=2009, month=1, day=1)
 
-        # skip this day
+    while record.num < 30000:
+        if record.date < last_day:
+            LOG.critical("Reach last day.")
+            return 0
+
         try:
-            result, query_num = db_manager.has_order(record_id)
-            if result > 0:
-                # LOG.info("Skip day %s" % day.strftime(TIME_FORMAT))
-                day -= datetime.timedelta(days=1)
-                cat_info["num"] += query_num
-                continue
-            article_num = 0
 
-            page_count, tmp_article_num = get_page(
-                cat_info,
-                session,
-                day.strftime(TIME_FORMAT),
-                1,
-                db_manager
-            )
-            article_num += tmp_article_num
+            page_count = record.page
 
-            for i in range(page_count - 1):
-                _, tmp_article_num = get_page(
+            while record.page <= page_count:
+                page_count, tmp_article_num = get_page(
                     cat_info,
                     session,
-                    day.strftime(TIME_FORMAT),
-                    2 + i,
+                    record.date.strftime(TIME_FORMAT),
+                    record.page,
                     db_manager
                 )
-                article_num += tmp_article_num
+                record.page += 1
+                record.num += tmp_article_num
+                record = db_manager.update_record(record)
 
-            new_record = {
-                "id": record_id,
-                "category": cat_info["name"],
-                "num": article_num,
-            }
-            db_manager.insert_record(new_record)
-
-            cat_info["num"] += article_num
-
-            # LOG.info("Get %d articles on %s, total %d" % (article_num, day.strftime(TIME_FORMAT), cat_info["num"]))
+            LOG.info("On category %s, total %d, date: %s" % (cat_info["name"], record.num, record.date.strftime(TIME_FORMAT)))
         except Exception as e:
-            print("Failed in gat:%s date:%s,reason: %s" % (cat_info["name"], day.strftime(TIME_FORMAT), e))
-
-        day -= datetime.timedelta(days=1)
+            LOG.error("Failed in gat:%s date:%s,reason: %s" % (cat_info["name"], record.date.strftime(TIME_FORMAT), e))
+        record.page = 1
+        record.date -= datetime.timedelta(days=1)
+        record = db_manager.update_record(record)
+    LOG.info("%s is ready. %d" % (cat_info["name"], record.num))
 
 
 if __name__ == "__main__":
 
-    processes = []
+    LOG = logging.getLogger('ta')
+    LOG.setLevel(logging.DEBUG)
 
-    # idx = 7
+    file_handler = logging.FileHandler(filename=sys.argv[2], encoding="utf-8")
+    file_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(threadName)-7s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    LOG.addHandler(file_handler)
+
+    stream_handler = logging.StreamHandler(sys.stderr)
+    stream_handler.setLevel(logging.ERROR)
+    stream_handler.setFormatter(formatter)
+    LOG.addHandler(stream_handler)
+
+    threads = []
+
+    # idx = 8
     # threads.append(
     #     threading.Thread(
     #         target=worker,
@@ -197,16 +186,16 @@ if __name__ == "__main__":
     # )
 
     for idx in range(len(CATEGORY_INFO)):
-        processes.append(
-            multiprocessing.Process(
+        threads.append(
+            threading.Thread(
                 target=worker,
                 args=(idx, ),
                 name=CATEGORY_INFO[idx][0]
             )
         )
 
-    for p in processes:
-        p.start()
+    for t in threads:
+        t.start()
 
-    for p in processes:
-        p.join()
+    for t in threads:
+        t.join()

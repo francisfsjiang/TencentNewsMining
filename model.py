@@ -1,7 +1,7 @@
 import sys
 
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Date
 from sqlalchemy.dialects.mysql import LONGTEXT
 from sqlalchemy import create_engine
 
@@ -25,8 +25,9 @@ class Article(Base):
 class Record(Base):
      __tablename__ = "records"
 
-     id             = Column(String(30), primary_key=True)
-     category       = Column(String(30))
+     category       = Column(String(30), primary_key=True)
+     date           = Column(Date)
+     page           = Column(Integer)
      num            = Column(Integer)
 
 if __name__ == "__main__":
