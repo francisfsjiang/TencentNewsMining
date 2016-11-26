@@ -10,8 +10,9 @@ Base = declarative_base()
 
 class Article(Base):
      __tablename__ = "articles"
-
-     id             = Column(String(30), primary_key=True)
+     id             = Column(Integer, primary_key=True, nullable=False,
+                             unique=True, autoincrement=True)
+     uid            = Column(String(30), unique=True, nullable=False)
      category       = Column(String(30))
      sub_category   = Column(String(30))
      date           = Column(String(30))
