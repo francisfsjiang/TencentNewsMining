@@ -89,7 +89,7 @@ if __name__ == "__main__":
     print("Word num: %d" % len(WORD_DICT))
 
     for counter in WORD_DICT.values():
-        if counter.word_num_total < 100:
+        if counter.word_num_total < 100 and len(counter.word) <= 1:
             continue
         session.add(counter)
         session.commit()
