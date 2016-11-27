@@ -86,10 +86,11 @@ if __name__ == "__main__":
         if id % 1000 == 0:
             print("ID: %d" % id)
 
+    print("Word num: %d" % len(WORD_DICT))
+
     for counter in WORD_DICT.values():
+        if counter.word_num_total < 100:
+            continue
         session.add(counter)
         session.commit()
 
-    print("ID : %d" % id)
-    print(sum)
-    print("updated")
