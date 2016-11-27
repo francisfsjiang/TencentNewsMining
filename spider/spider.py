@@ -8,7 +8,7 @@ import logging
 import threading
 import sys
 
-from db_manager import DBManager
+from spider.db_manager import DBManager
 
 TIME_FORMAT = "%Y-%m-%d"
 ID_EXTRACTOR = re.compile(r"http://[\w]*.qq.com/a/([\d]*)/([\d]*).htm")
@@ -158,7 +158,7 @@ def worker(cat_index):
     LOG.info("%s is ready. %d" % (cat_info["name"], record.num))
 
 
-if __name__ == "__main__":
+def main():
 
     LOG = logging.getLogger('ta')
     LOG.setLevel(logging.DEBUG)
@@ -199,3 +199,7 @@ if __name__ == "__main__":
 
     for t in threads:
         t.join()
+
+
+if __name__ == "__main__":
+    main()

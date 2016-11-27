@@ -3,7 +3,7 @@ import sqlalchemy.orm
 import sqlalchemy.exc
 import datetime
 
-from model import Article, Record
+from ta_model import Article, Record
 
 LOG = None
 
@@ -42,7 +42,6 @@ class DBManager(object):
                 self.session.add(record)
                 self.session.commit()
                 return record
-                break
 
             except sqlalchemy.exc.OperationalError as e:
                 LOG.error("Insert record failed operational error. Reason: %s. Record: %s" % (e, record_dict))
