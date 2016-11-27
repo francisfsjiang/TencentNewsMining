@@ -17,11 +17,16 @@ def add_one(obj, name):
             getattr(obj, name) + 1
             )
 
-def seg_filter(seg):
+
+def seg_filter(word):
+    seg = word.strip()
     if seg in STOP_WRODS:
         return False
 
+    if len(list(filter(lambda x: ord(x) > 57 or ord(x) < 48, seg))) == 0:
+        return False
 
+    return True
 
 if __name__ == "__main__":
 
@@ -35,11 +40,12 @@ if __name__ == "__main__":
 
     engine = sqlalchemy.create_engine(sys.argv[1])
     session = sqlalchemy.orm.sessionmaker(bind=engine)()
-    count = session.query(Article).count()
-    print("Count: %d" % count)
+    res = session.query(sqlalchemy.func.max(Article.id).label("max_id")).one_or_none()
+    max_id = res.max_id
+    print("Max id: %d" % max_id)
     sum = 0
     id = 0
-    for id in range(1, count+1):
+    for id in range(1, max_id+1):
         print(id)
         article = session.query(Article).filter(Article.id == id).one_or_none()
         if not article:
@@ -49,12 +55,8 @@ if __name__ == "__main__":
         words_in_article = set()
 
         for seg in seg_list:
-            if seg == "innerHTML":
-                exit(-1)
-            else:
-                continue
-            if seg_filter(seg):
-                continue
+            # if not seg_filter(seg):
+            #     continue
             if seg not in WORD_DICT:
                 counter = session.query(Counter).filter(Counter.word == seg).one_or_none()
                 if not counter:
