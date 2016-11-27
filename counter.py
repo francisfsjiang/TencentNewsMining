@@ -58,6 +58,8 @@ if __name__ == "__main__":
         words_in_article = set()
 
         for seg in seg_list:
+            if len(seg) > 20:
+                continue
             seg = seg.lower()
             if not seg_filter(seg):
                 continue
