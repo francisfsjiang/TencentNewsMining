@@ -13,9 +13,12 @@ STOP_WRODS = set()
 
 
 def add_one(obj, name):
-    setattr(obj, name,
-            getattr(obj, name) + 1
-            )
+    if getattr(obj, name):
+        setattr(obj, name,
+                getattr(obj, name) + 1
+                )
+    else:
+        setattr(obj, name, 1)
 
 
 def seg_filter(word):
@@ -23,7 +26,7 @@ def seg_filter(word):
     if seg in STOP_WRODS:
         return False
 
-    if len(list(filter(lambda x: ord(x) > 57 or ord(x) < 48, seg))) == 0:
+    if len(list(filter(lambda x: (ord(x) > 57 or ord(x) < 48) and x != ".", seg))) == 0:
         return False
 
     return True
@@ -55,17 +58,15 @@ if __name__ == "__main__":
         words_in_article = set()
 
         for seg in seg_list:
-            # if not seg_filter(seg):
-            #     continue
+            seg = seg.lower()
+            if not seg_filter(seg):
+                continue
             if seg not in WORD_DICT:
-                counter = session.query(Counter).filter(Counter.word == seg).one_or_none()
-                if not counter:
-                    counter = Counter(
-                        word=seg
-                    )
-                    session.add(counter)
-                    session.commit()
-
+                counter = Counter(
+                    word=seg,
+                    word_num_total=0,
+                    doc_num_total=0,
+                )
                 WORD_DICT[seg] = counter
             else:
                 counter = WORD_DICT[seg]
