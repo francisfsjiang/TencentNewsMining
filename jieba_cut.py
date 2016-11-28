@@ -16,4 +16,7 @@ if __name__ == "__main__":
         s = pickle.dumps(list(seg_list))
         article.content_cut = s
         session.add(article)
-        session.commit()
+        if article.id % 1000 == 0:
+            session.commit()
+
+    session.commit()
