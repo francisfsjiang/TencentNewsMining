@@ -8,6 +8,9 @@ import sys
 if __name__ == "__main__":
     print("TF-IDF calculating")
 
+    top = int(sys.argv[2])
+    print("Top: %d " % top)
+
     engine = sqlalchemy.create_engine(sys.argv[1])
     session = sqlalchemy.orm.sessionmaker(bind=engine)()
 
@@ -58,7 +61,7 @@ if __name__ == "__main__":
     for idx in range(len(CATEGORIES)):
         l = list(tf_idf_map[idx].items())
         l.sort(key=lambda x: x[1], reverse=True)
-        WORD_SET |= set(list(map(lambda x: x[0], l[:900])))
+        WORD_SET |= set(list(map(lambda x: x[0], l[:top])))
         # WORD_SET |= set(list(map(lambda x: x[0], l)))
 
     word_list = list(WORD_SET)

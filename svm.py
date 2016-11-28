@@ -4,6 +4,7 @@ import h5py
 
 
 if __name__ == "__main__":
+    print("sklearn svm calculating")
 
     file = h5py.File('article_mat.h5', 'r')
     art_mat = file['art_mat'][:]
@@ -26,7 +27,10 @@ if __name__ == "__main__":
     test_cat_mat = test_cat_mat.reshape(test_cat_mat.shape[0])
     test_id_mat = id_mat[mask]
 
-    clf = sklearn.svm.SVC(decision_function_shape='ovo')
+    clf = sklearn.svm.SVC(
+        decision_function_shape='ovr',
+        cache_size=1000,
+    )
     clf.fit(train_art_mat, train_cat_mat)
 
     result = clf.predict(train_art_mat)

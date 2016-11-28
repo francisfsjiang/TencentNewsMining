@@ -3,6 +3,7 @@
 *.obj
 *.h5
 *.txt
+*.model
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
