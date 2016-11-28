@@ -1,4 +1,5 @@
 import pickle
+import h5py
 import numpy as np
 
 from ta_model import CATEGORIES
@@ -7,9 +8,11 @@ from ta_model import CATEGORIES
 if __name__ == "__main__":
     print("Bayes calculating")
 
-    f = open("article_mat.obj", "rb")
-    art_mat, cat_mat, id_mat = pickle.load(f, protocol=4)
-    f.close()
+    file = h5py.File('article_mat.h5', 'r')
+    art_mat = file['art_mat'][:]
+    cat_mat = file['cat_mat'][:]
+    id_mat  = file['id_mat' ][:]
+    file.close()
 
     choice = np.random.choice(art_mat.shape[0], art_mat.shape[0] // 2, replace=False)
     mask = np.zeros(art_mat.shape[0], np.bool)

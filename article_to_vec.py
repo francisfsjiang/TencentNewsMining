@@ -1,6 +1,7 @@
 import sqlalchemy
 from ta_model import CATEGORIES, Article, traverse
 import math
+import h5py
 import pickle
 import sys
 import numpy as np
@@ -40,6 +41,8 @@ if __name__ == "__main__":
         if mat_idx % 1000 == 0:
             print(mat_idx)
 
-    f = open("article_mat.obj", "wb")
-    pickle.dump((art_mat, cat_mat, id_mat), f, protocol=4)
-    f.close()
+    file = h5py.File('article_mat.h5', 'w')
+    file.create_dataset('art_mat', data=art_mat)
+    file.create_dataset('cat_mat', data=cat_mat)
+    file.create_dataset('id_mat', data=id_mat)
+    file.close()
