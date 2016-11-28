@@ -1,8 +1,8 @@
 import sys
 import sqlalchemy
+import pickle
 
 import sqlalchemy.orm
-import jieba
 import re
 
 from ta_model import Article, Counter, traverse
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     id = 0
     for article in traverse(session, Article):
 
-        seg_list = jieba.cut_for_search(article.content)
+        seg_list = pickle.loads(article.content_cut)
 
         words_in_article = set()
 

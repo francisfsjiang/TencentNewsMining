@@ -3,7 +3,6 @@ from ta_model import CATEGORIES, Article, traverse
 import math
 import pickle
 import sys
-import jieba
 import numpy as np
 
 
@@ -32,7 +31,7 @@ if __name__ == "__main__":
         id_mat[mat_idx] = article.id
         cat_mat[mat_idx] = CATEGORIES.index(article.category)
 
-        seg_list = jieba.cut_for_search(article.content)
+        seg_list = pickle.loads(article.content_cut)
         for seg in seg_list:
             if seg not in WORD_SET:
                 continue
