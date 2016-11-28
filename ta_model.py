@@ -7,7 +7,6 @@ from sqlalchemy import create_engine
 import sqlalchemy
 
 
-
 Base = declarative_base()
 
 

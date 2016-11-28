@@ -9,7 +9,7 @@ import numpy as np
 if __name__ == "__main__":
     print("Article to vec calculating")
 
-    engine = sqlalchemy.create_engine("mysql+mysqlconnector://root:root@127.0.0.1:3306/tencent_articles?charset=utf8")
+    engine = sqlalchemy.create_engine(sys.argv[1])
     session = sqlalchemy.orm.sessionmaker(bind=engine)()
 
     f = open("word_list.obj", "rb")
