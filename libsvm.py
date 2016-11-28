@@ -1,6 +1,19 @@
 import numpy as np
-import sklearn.svm
 import h5py
+
+
+def dump_to_libsvm_format(file_name, art_mat, train_mat):
+    f = open(file_name, "w")
+    for mat_idx in range(art_mat.shape[0]):
+        f.write(str(cat_mat[mat_idx][0]))
+        f.write(" ")
+        for col_idx in range(art_mat.shape[1]):
+            f.write(str(col_idx + 1))
+            f.write(":")
+            f.write(str(art_mat[mat_idx][col_idx]))
+            f.write(" ")
+        f.write("\n")
+    f.close()
 
 
 if __name__ == "__main__":
@@ -26,13 +39,5 @@ if __name__ == "__main__":
     test_cat_mat = test_cat_mat.reshape(test_cat_mat.shape[0])
     test_id_mat = id_mat[mask]
 
-    clf = sklearn.svm.SVC(decision_function_shape='ovo')
-    clf.fit(train_art_mat, train_cat_mat)
-
-    result = clf.predict(train_art_mat)
-    acc = np.sum(result == train_cat_mat) / result.shape[0]
-    print("ACC on train set: %f%% " % (acc * 100))
-
-    result = clf.predict(test_art_mat)
-    acc = np.sum(result == test_cat_mat) / result.shape[0]
-    print("ACC: %f%% " % (acc * 100))
+    dump_to_libsvm_format("libsvm_train.txt", train_art_mat, train_cat_mat)
+    dump_to_libsvm_format("libsvm_test.txt", test_art_mat, test_cat_mat)
