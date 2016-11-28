@@ -44,8 +44,6 @@ if __name__ == "__main__":
     engine = sqlalchemy.create_engine(sys.argv[1])
     session = sqlalchemy.orm.sessionmaker(bind=engine)()
 
-    sum = 0
-    id = 0
     for article in traverse(session, Article):
 
         seg_list = pickle.loads(article.content_cut)
@@ -78,8 +76,8 @@ if __name__ == "__main__":
             add_one(counter, "doc_num_%s" % article.category)
             counter.doc_num_total += 1
 
-        if id % 1000 == 0:
-            print("ID: %d" % id)
+        if article.id % 1000 == 0:
+            print("ID: %d" % article.id)
 
     print("Word num: %d" % len(WORD_DICT))
 
