@@ -21,10 +21,7 @@ if __name__ == "__main__":
     total_tf = [0] * len(CATEGORIES)
     total_doc_num = 0
 
-    for id in range(min_id, max_id + 1):
-        counter = session.query(Counter).filter(Counter.id == id).one_or_none()
-        if not counter:
-            continue
+    for counter in session.query(Counter).all():
 
         tf[counter.word] = []
         for idx, cat in enumerate(CATEGORIES):
@@ -61,7 +58,7 @@ if __name__ == "__main__":
     for idx in range(len(CATEGORIES)):
         l = list(tf_idf_map[idx].items())
         l.sort(key=lambda x: x[1], reverse=True)
-        WORD_SET |= set(list(map(lambda x: x[0], l[:500])))
+        WORD_SET |= set(list(map(lambda x: x[0], l[:700])))
 
     word_list = list(WORD_SET)
     word_list.sort()

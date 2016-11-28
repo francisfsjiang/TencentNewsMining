@@ -5,7 +5,7 @@ import sqlalchemy.orm
 import jieba
 import re
 
-from ta_model import Article, Counter
+from ta_model import Article, Counter, traverse
 
 WORD_DICT = {}
 
@@ -43,16 +43,11 @@ if __name__ == "__main__":
 
     engine = sqlalchemy.create_engine(sys.argv[1])
     session = sqlalchemy.orm.sessionmaker(bind=engine)()
-    res = session.query(sqlalchemy.func.max(Article.id).label("max_id")).one_or_none()
-    max_id = res.max_id
-    print("Max id: %d" % max_id)
+
     sum = 0
     id = 0
-    for id in range(1, max_id+1):
-        print(id)
-        article = session.query(Article).filter(Article.id == id).one_or_none()
-        if not article:
-            continue
+    for article in traverse(session, Article):
+
         seg_list = jieba.cut_for_search(article.content)
 
         words_in_article = set()
@@ -92,5 +87,5 @@ if __name__ == "__main__":
         if counter.word_num_total < 1000 or len(counter.word) <= 1:
             continue
         session.add(counter)
-        session.commit()
+    session.commit()
 
