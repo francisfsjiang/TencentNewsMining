@@ -8,7 +8,7 @@ if __name__ == "__main__":
     print("Bayes calculating")
 
     f = open("article_mat.obj", "rb")
-    art_mat, cat_mat, id_mat = pickle.load(f)
+    art_mat, cat_mat, id_mat = pickle.load(f, protocol=4)
     f.close()
 
     choice = np.random.choice(art_mat.shape[0], art_mat.shape[0] // 2, replace=False)

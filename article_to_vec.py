@@ -41,5 +41,5 @@ if __name__ == "__main__":
             print(mat_idx)
 
     f = open("article_mat.obj", "wb")
-    pickle.dump((art_mat, cat_mat, id_mat), f)
+    pickle.dump((art_mat, cat_mat, id_mat), f, protocol=4)
     f.close()
