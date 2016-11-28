@@ -27,7 +27,6 @@ if __name__ == "__main__":
 
     mat_idx = 0
     for article in traverse(session, Article):
-        print(article.id)
         id_mat[mat_idx] = article.id
         cat_mat[mat_idx] = CATEGORIES.index(article.category)
 

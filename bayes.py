@@ -33,6 +33,11 @@ if __name__ == "__main__":
 
         beyas_mat[cat][:] = np.log(np.sum(cur_art_mat, axis=0) + 1 / cur_art_mat.shape[0])
 
+    result = np.argmax(beyas_mat.dot(train_art_mat.T), axis=0)
+    result = result.reshape(result.shape[0], 1)
+    acc = np.sum(result == train_cat_mat) / result.shape[0]
+    print("ACC on train set: %f%% " % (acc * 100))
+
     result = np.argmax(beyas_mat.dot(test_art_mat.T), axis=0)
     result = result.reshape(result.shape[0], 1)
     acc = np.sum(result == test_cat_mat) / result.shape[0]

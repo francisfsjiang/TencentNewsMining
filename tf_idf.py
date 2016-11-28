@@ -58,7 +58,7 @@ if __name__ == "__main__":
     for idx in range(len(CATEGORIES)):
         l = list(tf_idf_map[idx].items())
         l.sort(key=lambda x: x[1], reverse=True)
-        WORD_SET |= set(list(map(lambda x: x[0], l[:700])))
+        WORD_SET |= set(list(map(lambda x: x[0], l[:800])))
 
     word_list = list(WORD_SET)
     word_list.sort()
