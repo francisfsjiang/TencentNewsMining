@@ -4,7 +4,7 @@ import h5py
 
 
 if __name__ == "__main__":
-    print("sklearn svm calculating")
+    print("sklearn bayes calculating")
 
     file = h5py.File('article_mat.h5', 'r')
     art_mat = file['art_mat'][:]
@@ -27,7 +27,7 @@ if __name__ == "__main__":
     test_cat_mat = test_cat_mat.reshape(test_cat_mat.shape[0])
     test_id_mat = id_mat[mask]
 
-    clf = sklearn.naive_bayes.GaussianNB()
+    clf = sklearn.naive_bayes.MultinomialNB()
     clf.fit(train_art_mat, train_cat_mat)
 
     result = clf.predict(train_art_mat)
