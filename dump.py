@@ -15,8 +15,12 @@ if __name__ == "__main__":
     session = sqlalchemy.orm.sessionmaker(bind=engine)()
 
     for article in traverse(session, Article):
+        path = "dump/%s/" % (article.category, )
+        if not os.path.exists(path):
+            os.mkdir(path)
+
         f = open(
-            "dump/%s/%s.txt" % (article.category, article.uid),
+            os.path.join(path, "%s.txt" % (article.uid, )),
             "w",
             encoding="utf-8"
         )
