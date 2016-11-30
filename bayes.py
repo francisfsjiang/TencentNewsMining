@@ -29,10 +29,8 @@ if __name__ == "__main__":
     test_id_mat = id_mat[mask]
 
     beyas_mat = np.zeros((len(CATEGORIES), train_art_mat.shape[1]))
-    p_cat_mat = np.zeros((len(CATEGORIES),))
     for cat in range(len(CATEGORIES)):
         idx = np.where(train_cat_mat == cat)[0]
-        p_cat_mat[cat] = idx.shape[0] / train_cat_mat.shape[0]
         cur_art_mat = train_art_mat[idx]
 
         beyas_mat[cat][:] = np.log(np.sum(cur_art_mat, axis=0) + 1 / cur_art_mat.shape[0])
