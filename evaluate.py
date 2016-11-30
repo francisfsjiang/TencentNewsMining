@@ -18,7 +18,12 @@ def recall(predicted, actual):
 
     print("Recall: %f %% " % (np.mean(r_mat) * 100, ))
 
-
+    print(" " * 8, end="")
     for i, cat in enumerate(CATEGORIES):
         print("%-8s" % cat, end="")
-        print(c_mat[i])
+    print()
+    for i, cat in enumerate(CATEGORIES):
+        print("%-8s" % cat, end="")
+        for j in c_mat[i]:
+            print("%-8d" % int(j), end="")
+        print()
