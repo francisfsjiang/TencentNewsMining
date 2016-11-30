@@ -3,6 +3,7 @@ import h5py
 import numpy as np
 
 from ta_model import CATEGORIES
+from evaluate import recall
 
 
 if __name__ == "__main__":
@@ -36,6 +37,7 @@ if __name__ == "__main__":
 
         beyas_mat[cat][:] = np.log(np.sum(cur_art_mat, axis=0) + 1 / cur_art_mat.shape[0])
 
+
     result = np.argmax(beyas_mat.dot(train_art_mat.T), axis=0)
     result = result.reshape(result.shape[0], 1)
     acc = np.sum(result == train_cat_mat) / result.shape[0]
@@ -45,3 +47,5 @@ if __name__ == "__main__":
     result = result.reshape(result.shape[0], 1)
     acc = np.sum(result == test_cat_mat) / result.shape[0]
     print("ACC: %f%% " % (acc * 100))
+
+    recall(result, test_cat_mat)

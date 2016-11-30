@@ -2,6 +2,7 @@ import numpy as np
 import sklearn.naive_bayes
 import h5py
 
+from evaluate import recall
 
 if __name__ == "__main__":
     print("sklearn bayes calculating")
@@ -37,3 +38,5 @@ if __name__ == "__main__":
     result = clf.predict(test_art_mat)
     acc = np.sum(result == test_cat_mat) / result.shape[0]
     print("ACC: %f%% " % (acc * 100))
+
+    recall(result, test_cat_mat)
