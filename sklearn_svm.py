@@ -42,4 +42,6 @@ if __name__ == "__main__":
     acc = np.sum(result == test_cat_mat) / result.shape[0]
     print("ACC: %f%% " % (acc * 100))
 
+    result = result.reshape((result.shape[0], 1))
+    test_cat_mat = test_cat_mat.reshape((test_cat_mat.shape[0], 1))
     recall(result, test_cat_mat)
