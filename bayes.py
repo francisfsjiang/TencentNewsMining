@@ -2,7 +2,7 @@ import pickle
 import h5py
 import numpy as np
 
-from ta_model import CATEGORIES
+from article_to_vec import CATEGORIES
 from evaluate import recall
 
 

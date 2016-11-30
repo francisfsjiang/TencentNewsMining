@@ -1,7 +1,6 @@
 import numpy as np
 
-from ta_model import CATEGORIES
-
+from article_to_vec import CATEGORIES
 
 def recall(predicted, actual):
     n = len(CATEGORIES)

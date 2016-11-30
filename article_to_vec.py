@@ -1,11 +1,23 @@
 import sqlalchemy
-from ta_model import CATEGORIES, Article, traverse
+from ta_model import Article, traverse
 import math
 import h5py
 import pickle
 import sys
 import numpy as np
 
+CATEGORIES = [
+    "news",
+    "army",
+    "gnews",
+    "sports",
+    "ent",
+    "tech",
+    "games",
+    "auto",
+    "edu",
+    "house"
+]
 
 if __name__ == "__main__":
     print("Article to vec calculating")
@@ -28,6 +40,8 @@ if __name__ == "__main__":
 
     mat_idx = 0
     for article in traverse(session, Article):
+        if article.category not in CATEGORIES:
+            continue
         id_mat[mat_idx] = article.id
         cat_mat[mat_idx] = CATEGORIES.index(article.category)
 
