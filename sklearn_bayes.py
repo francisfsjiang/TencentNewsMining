@@ -6,7 +6,7 @@ from evaluate import recall
 
 if __name__ == "__main__":
     print("sklearn bayes calculating")
-
+a
     file = h5py.File('article_mat.h5', 'r')
     art_mat = file['art_mat'][:]
     cat_mat = file['cat_mat'][:]

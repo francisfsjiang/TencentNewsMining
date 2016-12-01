@@ -11,11 +11,19 @@ def recall(predicted, actual):
         c_mat[int(actual[i][0])][int(predicted[i][0])] += 1
 
 
-    r_mat = np.sum(c_mat, axis=1)
+    recall_mat = np.sum(c_mat, axis=1)
     for i, _ in enumerate(CATEGORIES):
-        r_mat[i] = c_mat[i][i] / r_mat[i]
+        if recall_mat[i] == 0:
+            recall_mat[i] = 0
+        else:
+            recall_mat[i] = c_mat[i][i] / recall_mat[i]
 
-    print("Recall: %f %% " % (np.mean(r_mat) * 100, ))
+    acc_mat = np.sum(c_mat, axis=0)
+    for i, _ in enumerate(CATEGORIES):
+        if acc_mat[i] == 0:
+            acc_mat[i] = 0
+        else:
+            acc_mat[i] = c_mat[i][i] / acc_mat[i]
 
     print(" " * 8, end="")
     for i, cat in enumerate(CATEGORIES):
@@ -25,4 +33,11 @@ def recall(predicted, actual):
         print("%-8s" % cat, end="")
         for j in c_mat[i]:
             print("%-8d" % int(j), end="")
-        print()
+        print("acc: %-8f recall %-8f" % (acc_mat[i]*100, recall_mat[i]*100))
+
+    print("Max Acc: %f %% " % (np.max(acc_mat) * 100, ))
+    print("Max Recall: %f %% " % (np.max(recall_mat) * 100, ))
+    print("Min Acc: %f %% " % (np.min(acc_mat) * 100, ))
+    print("Min Recall: %f %% " % (np.min(recall_mat) * 100, ))
+    print("Mean Acc: %f %% " % (np.mean(acc_mat) * 100, ))
+    print("Mean Recall: %f %% " % (np.mean(recall_mat) * 100, ))
